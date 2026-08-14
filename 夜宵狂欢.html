@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>夜宵狂欢</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .qty-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <!-- 主体内容区 -->
+    <main class="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+
+        <!-- 欢迎语与搜索 -->
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">深夜食堂 · 夜宵狂欢</h2>
+                <p class="text-gray-500 text-sm mt-1">仅支持现金支付</p>
+            </div>
+            <div class="relative w-full sm:w-64">
+                <input type="text" id="search-input" placeholder="搜索夜宵..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-shadow">
+                <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+        </div>
+
+        <!-- 按店铺分类的菜品区域 -->
+        <div id="menu-sections" class="space-y-8">
+            <!-- 店铺分区将通过JS动态生成 -->
+        </div>
+
+        <!-- 空状态提示 (默认隐藏) -->
+        <div id="empty-state" class="hidden flex-col items-center justify-center h-64 text-gray-400">
+            <i class="fa-solid fa-cookie-bite text-4xl mb-3"></i>
+            <p>没有找到相关商品</p>
+        </div>
+    </main>
+
+    <!-- JavaScript 逻辑 -->
+    <script>
+        // 来源标识
+        const SOURCE = 'yexiao';
+
+        // 夜宵数据：按店铺名分组，每项 { name, price }
+        const shopData = {
+            '衢州鸭头': [
+                { name: '鸭头', price: 6 },
+                { name: '热狗', price: 3 },
+                { name: '鸭肠', price: 3 },
+                { name: '鸭翅', price: 3 },
+                { name: '腐竹', price: 2 },
+                { name: '金针菇', price: 1.5 },
+                { name: '莲藕', price: 1 },
+                { name: '萝卜', price: 1 },
+                { name: '土豆', price: 2 }
+            ],
+            '火炬二路': [
+                { name: '炭烤生蚝', price: 10 },
+                { name: '长沙臭豆腐', price: 10 },
+                { name: '铁板豆腐', price: 6 }
+            ],
+            '夜宵小串': [
+                { name: '套餐', price: 20 }
+            ],
+            '绝味鸭脖': [
+                { name: '毛豆', price: 9.9 },
+                { name: '莲藕', price: 9.9 },
+                { name: '鸡叉骨', price: 16.8 },
+                { name: '鸭中翅', price: 12 },
+                { name: '鸭锁骨', price: 15 },
+                { name: '鸭脖', price: 25 },
+                { name: '柠檬鸡爪', price: 32 }
+            ],
+            '煌上煌': [
+                { name: '手撕酱鸭', price: 30 },
+                { name: '鹌鹑', price: 8 },
+                { name: '猪耳', price: 25 },
+                { name: '鸭中翅', price: 16.8 },
+                { name: '毛豆', price: 9.9 }
+            ],
+            '周黑鸭': [
+                { name: '龙虾尾', price: 29.9 },
+                { name: '虎皮凤爪', price: 28 },
+                { name: '鸭锁骨', price: 24 },
+                { name: '鸭脖', price: 32 },
+                { name: '毛豆', price: 12.8 },
+                { name: '鸭中翅', price: 26 }
+            ],
+            '超市': [
+                { name: '雪花啤酒（箱）', price: 42 },
+                { name: '夺命大乌苏', price: 8 },
+                { name: '南昌八度', price: 5 },
+                { name: '雪花啤酒', price: 3.2 }
+            ],
+            '自制': [
+                { name: '香菜牛肉', price: 35 },
+                { name: '麻辣烤鱼', price: 28 },
+                { name: '美味时蔬', price: 8 },
+                { name: '椒盐虾', price: 30 },
+                { name: '辣椒炒肉', price: 12 }
+            ]
+        };
+
+        // 展平为带店铺信息与唯一 id 的项，并按价格降序
+        let menuItems = [];
+        let shopIdCounter = 1;
+        Object.entries(shopData).forEach(([shop, items]) => {
+            const shopId = shopIdCounter++;
+            items
+                .slice()
+                .sort((a, b) => b.price - a.price)
+                .forEach((item, idx) => {
+                    menuItems.push({
+                        id: shopId * 1000 + idx + 1,
+                        name: item.name,
+                        price: item.price,
+                        shop: shop,
+                        shopId: shopId
+                    });
+                });
+        });
+
+        // 购物车状态（由父页面同步）
+        let cart = [];
+
+        // DOM 元素
+        const menuSections = document.getElementById('menu-sections');
+        const searchInput = document.getElementById('search-input');
+        const emptyState = document.getElementById('empty-state');
+
+        // 初始化
+        function init() {
+            // 购物车不持久化，刷新后从空开始
+            cart = [];
+            renderMenu(menuItems);
+            requestCart();
+
+            // 搜索监听
+            searchInput.addEventListener('input', (e) => {
+                const keyword = e.target.value.toLowerCase();
+                const filtered = menuItems.filter(item =>
+                    item.name.toLowerCase().includes(keyword) ||
+                    item.shop.toLowerCase().includes(keyword)
+                );
+                renderMenu(filtered);
+            });
+        }
+
+        // 渲染菜单（按店铺名分组展示）
+        function renderMenu(items) {
+            menuSections.innerHTML = '';
+
+            if (items.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+
+            // 按店铺分组
+            const groups = {};
+            items.forEach(item => {
+                if (!groups[item.shop]) groups[item.shop] = [];
+                groups[item.shop].push(item);
+            });
+
+            Object.entries(groups).forEach(([shop, shopItems]) => {
+                const section = document.createElement('section');
+                section.className = 'fade-in';
+
+                const header = document.createElement('h3');
+                header.className = 'text-lg font-bold text-gray-800 mb-3 flex items-center gap-2 border-l-4 border-orange-500 pl-3';
+                header.innerHTML = `<i class="fa-solid fa-store text-orange-500"></i> ${shop}`;
+                section.appendChild(header);
+
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
+
+                shopItems.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 flex items-center justify-between p-4';
+
+                    const cartItem = cart.find(c => c.id === item.id && c.source === SOURCE);
+                    const qty = cartItem ? cartItem.quantity : 0;
+
+                    card.setAttribute('data-id', item.id);
+                    card.innerHTML = `
+                        <div class="min-w-0">
+                            <h4 class="font-bold text-gray-900 truncate">${item.name}</h4>
+                            <span class="text-orange-600 font-bold">¥${item.price}</span>
+                        </div>
+                        <div class="flex-none ml-3" data-control></div>
+                    `;
+                    grid.appendChild(card);
+                    updateCardControl(card, item, qty);
+                });
+
+                section.appendChild(grid);
+                menuSections.appendChild(section);
+            });
+        }
+
+        // 更新单张卡片的加减控件（不重建整页）
+        function updateCardControl(card, item, qty) {
+            const control = card.querySelector('[data-control]');
+            if (qty > 0) {
+                control.innerHTML = `
+                    <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                        <button onclick="updateQuantity(${item.id}, -1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-orange-500 transition-colors qty-btn">
+                            <i class="fa-solid fa-minus text-xs"></i>
+                        </button>
+                        <span class="w-8 text-center font-medium text-gray-800">${qty}</span>
+                        <button onclick="updateQuantity(${item.id}, 1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-orange-500 transition-colors qty-btn">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                control.innerHTML = `
+                    <button onclick="updateQuantity(${item.id}, 1)" class="w-10 h-10 flex items-center justify-center bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white rounded-lg transition-colors duration-200">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                `;
+            }
+        }
+
+        // 同步购物车状态：仅更新已有卡片的数量，不重绘整页
+        function syncCardQuantities() {
+            const cards = menuSections.querySelectorAll('[data-id]');
+            cards.forEach(card => {
+                const id = Number(card.getAttribute('data-id'));
+                const item = menuItems.find(m => m.id === id);
+                if (!item) return;
+                const cartItem = cart.find(c => c.id === id && c.source === SOURCE);
+                const qty = cartItem ? cartItem.quantity : 0;
+                updateCardControl(card, item, qty);
+            });
+        }
+
+        // 更新数量（通过 postMessage 通知父页面）
+        function updateQuantity(id, change) {
+            const item = menuItems.find(m => m.id === id);
+            if (!item) return;
+
+            window.parent.postMessage({
+                type: 'UPDATE_CART_ITEM',
+                item: {
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    source: SOURCE,
+                    shop: item.shop
+                },
+                change: change
+            }, '*');
+        }
+
+        // 请求父页面同步购物车
+        function requestCart() {
+            window.parent.postMessage({ type: 'REQUEST_CART' }, '*');
+        }
+
+        // 接收父页面购物车同步消息
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'CART_SYNC') {
+                cart = e.data.cart || [];
+                syncCardQuantities();
+            }
+        });
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html>

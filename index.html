@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>周末Happy Dining</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .qty-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased h-screen flex flex-col overflow-hidden">
+
+    <!-- 头部导航 + 页签 -->
+    <header class="bg-white shadow-sm z-20 flex-none">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-utensils text-orange-500 text-2xl"></i>
+                <h1 class="text-xl font-bold text-gray-900 tracking-tight">周末Happy Dining</h1>
+            </div>
+
+            <!-- 页签切换 -->
+            <nav class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                <button id="tab-meishi" onclick="switchTab('meishi')" class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-orange-600 shadow-sm">
+                    <i class="fa-solid fa-bowl-rice mr-1"></i> 美味小馆
+                </button>
+                <button id="tab-yexiao" onclick="switchTab('yexiao')" class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900">
+                    <i class="fa-solid fa-moon mr-1"></i> 夜宵狂欢
+                </button>
+            </nav>
+
+            <!-- 移动端购物车入口 -->
+            <button onclick="toggleCart()" class="relative p-2 text-gray-600 hover:text-orange-500 transition-colors md:hidden">
+                <i class="fa-solid fa-shopping-cart text-xl"></i>
+                <span id="cart-badge" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-500 rounded-full hidden">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主体：左侧子页面 + 右侧我的订单 -->
+    <main class="flex-1 flex overflow-hidden">
+        <!-- 左侧子页面 iframe -->
+        <div class="flex-1 overflow-hidden relative bg-gray-50">
+            <iframe id="frame-meishi" src="美味小馆.html" class="w-full h-full border-0 absolute inset-0"></iframe>
+            <iframe id="frame-yexiao" src="夜宵狂欢.html" class="w-full h-full border-0 absolute inset-0 hidden"></iframe>
+        </div>
+
+        <!-- 右侧：购物车（桌面端常驻，移动端抽屉） -->
+        <div id="cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden transition-opacity duration-300 md:hidden" onclick="toggleCart()"></div>
+
+        <aside id="cart-sidebar" class="fixed top-0 right-0 h-full w-full sm:w-96 z-40 bg-white shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 md:static md:transform-none md:translate-x-0 md:z-auto md:shadow-none md:border-l md:border-gray-100 md:w-80 xl:w-96">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-basket-shopping text-orange-500"></i> 我的订单
+                </h3>
+                <div class="flex items-center gap-1">
+                    <button id="clear-cart-btn" onclick="clearCart()" class="hidden px-2 py-1.5 text-sm text-red-500 hover:bg-red-50 rounded-md transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can text-xs"></i> 清空
+                    </button>
+                    <button onclick="toggleCart()" class="text-gray-400 hover:text-gray-600 transition-colors md:hidden p-1">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 购物车列表 -->
+            <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-2">
+                <!-- 按来源分类展示 -->
+            </div>
+
+            <!-- 购物车底部结算 -->
+            <div class="border-t border-gray-100 p-6 bg-gray-50">
+                <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span>所需券数</span>
+                            <span id="cart-total-count">0 张</span>
+                        </div>
+                    <div class="flex justify-between text-xl font-bold text-gray-900">
+                        <span>现金金额</span>
+                        <span class="text-orange-600">¥<span id="cart-total-price">0.00</span></span>
+                    </div>
+                </div>
+                <button onclick="checkout()" id="checkout-btn" disabled class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2">
+                    <span>立即结算</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- 成功提示模态框 -->
+    <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full mx-4 relative transform transition-all scale-100 fade-in text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-check text-3xl text-green-500"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">下单成功！</h3>
+            <p class="text-gray-500 mb-6">您的美食正在准备中，请稍等片刻。</p>
+            <button onclick="closeModal()" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                确定
+            </button>
+        </div>
+    </div>
+
+    <!-- 券确认提示模态框 -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="closeConfirmModal()"></div>
+        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full mx-4 relative transform transition-all scale-100 fade-in text-center">
+            <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-ticket text-3xl text-amber-500"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-4 leading-relaxed" id="confirm-text"></h3>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg transition-colors">
+                    再逛逛
+                </button>
+                <button data-confirm class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                    确定下单
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 账单模态框 -->
+    <div id="bill-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="closeBillModal()"></div>
+        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full mx-4 relative transform transition-all scale-100 fade-in">
+            <div class="flex items-center gap-2 mb-5">
+                <i class="fa-solid fa-receipt text-xl text-orange-500"></i>
+                <h3 class="text-xl font-bold text-gray-900">订单账单</h3>
+            </div>
+            <div id="bill-text" class="mb-6"></div>
+            <div class="flex gap-3">
+                <button onclick="closeBillModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg transition-colors">
+                    取消
+                </button>
+                <button onclick="payBill()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                    确认支付
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 逻辑 -->
+    <script>
+        // DOM 元素
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartBadge = document.getElementById('cart-badge');
+        const cartTotalCount = document.getElementById('cart-total-count');
+        const cartTotalPrice = document.getElementById('cart-total-price');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const cartSidebar = document.getElementById('cart-sidebar');
+        const cartOverlay = document.getElementById('cart-overlay');
+        const successModal = document.getElementById('success-modal');
+        const clearCartBtn = document.getElementById('clear-cart-btn');
+        const frameMeishi = document.getElementById('frame-meishi');
+        const frameYexiao = document.getElementById('frame-yexiao');
+        const tabMeishi = document.getElementById('tab-meishi');
+        const tabYexiao = document.getElementById('tab-yexiao');
+
+        // 来源分类配置
+        const SOURCE_CONFIG = {
+            meishi: { label: '美味小馆', icon: 'fa-bowl-rice' },
+            yexiao: { label: '夜宵狂欢', icon: 'fa-moon' }
+        };
+
+        // 当前页签与购物车状态
+        let currentTab = 'meishi';
+        let cart = [];
+
+        // 初始化
+        function init() {
+            updateCartUI();
+            broadcastCart();
+        }
+
+        // 切换页签
+        function switchTab(tab) {
+            currentTab = tab;
+            if (tab === 'meishi') {
+                frameMeishi.classList.remove('hidden');
+                frameYexiao.classList.add('hidden');
+
+                tabMeishi.classList.add('bg-white', 'text-orange-600', 'shadow-sm');
+                tabMeishi.classList.remove('text-gray-600', 'hover:text-gray-900');
+
+                tabYexiao.classList.remove('bg-white', 'text-orange-600', 'shadow-sm');
+                tabYexiao.classList.add('text-gray-600', 'hover:text-gray-900');
+            } else {
+                frameMeishi.classList.add('hidden');
+                frameYexiao.classList.remove('hidden');
+
+                tabYexiao.classList.add('bg-white', 'text-orange-600', 'shadow-sm');
+                tabYexiao.classList.remove('text-gray-600', 'hover:text-gray-900');
+
+                tabMeishi.classList.remove('bg-white', 'text-orange-600', 'shadow-sm');
+                tabMeishi.classList.add('text-gray-600', 'hover:text-gray-900');
+            }
+        }
+
+        // 保存购物车（内存存储，刷新即清空）
+        function saveCart() {
+            // 不写入 localStorage，刷新后购物车自动清空
+        }
+
+        // 更新购物车中某商品数量（用于购物车内 +/- 按钮）
+        function updateQuantity(id, change, source) {
+            const existing = cart.find(c => c.id === id && c.source === source);
+            if (existing) {
+                existing.quantity += change;
+                if (existing.quantity <= 0) {
+                    cart = cart.filter(c => !(c.id === id && c.source === source));
+                }
+            }
+            saveCart();
+            updateCartUI();
+            broadcastCart();
+        }
+
+        // 计算各来源的金额与券数
+        function calcTotals() {
+            const meishiItems = cart.filter(c => c.source === 'meishi');
+            const yexiaoItems = cart.filter(c => c.source === 'yexiao');
+
+            const meishiPrice = meishiItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const yexiaoPrice = yexiaoItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const totalPrice = meishiPrice + yexiaoPrice;
+
+            // 美味小馆：25元食堂券，上取整
+            const meishiCoupons = Math.ceil(meishiPrice / 25);
+            // 券内余额（正数表示未用满的金额，负数表示超出）
+            const meishiBalance = meishiCoupons * 25 - meishiPrice;
+            // 夜宵狂欢：现金
+
+            return { meishiItems, yexiaoItems, meishiPrice, yexiaoPrice, totalPrice, meishiCoupons, meishiBalance };
+        }
+
+        // 更新购物车UI
+        function updateCartUI() {
+            const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const { meishiPrice, yexiaoPrice, meishiCoupons, meishiBalance } = calcTotals();
+
+            // 更新徽章（使用券数）
+            if (meishiCoupons > 0) {
+                cartBadge.textContent = meishiCoupons;
+                cartBadge.classList.remove('hidden');
+            } else {
+                cartBadge.classList.add('hidden');
+            }
+
+            // 更新底部统计：所需券数 / 现金金额
+            let countText = `${meishiCoupons} 张`;
+            if (meishiCoupons > 0 && meishiBalance > 0) {
+                countText += ` <span class="text-green-600 font-medium">-${meishiBalance.toFixed(2)}元</span>`;
+            }
+            cartTotalCount.innerHTML = countText;
+            cartTotalPrice.textContent = yexiaoPrice.toFixed(2);
+
+            // 更新结算按钮状态
+            checkoutBtn.disabled = totalCount === 0;
+
+            // 控制一键清空按钮显示
+            if (cart.length > 0) {
+                clearCartBtn.classList.remove('hidden');
+            } else {
+                clearCartBtn.classList.add('hidden');
+            }
+
+            // 渲染购物车列表（按来源分类展示）
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                        <i class="fa-solid fa-cart-arrow-down text-4xl mb-3 opacity-50"></i>
+                        <p>购物车是空的</p>
+                        <button onclick="toggleCart()" class="mt-4 text-orange-500 text-sm font-medium hover:underline md:hidden">去点餐</button>
+                    </div>
+                `;
+            } else {
+                const groups = cart.reduce((acc, item) => {
+                    if (!acc[item.source]) acc[item.source] = [];
+                    acc[item.source].push(item);
+                    return acc;
+                }, {});
+
+                cartItemsContainer.innerHTML = Object.entries(groups).map(([source, items]) => {
+                    const config = SOURCE_CONFIG[source] || { label: source, icon: 'fa-utensils' };
+                    return `
+                        <div class="mb-4 fade-in">
+                            <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2 px-1">
+                                <i class="fa-solid ${config.icon} text-orange-500"></i>
+                                ${config.label}
+                            </div>
+                            <div class="space-y-3">
+                                ${items.map(item => `
+                                    <div class="flex items-center gap-4 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                                        <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-md">
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="font-bold text-gray-800 text-sm truncate">${item.name}</h4>
+                                            <p class="text-orange-600 font-medium text-sm">¥${item.price}</p>
+                                        </div>
+                                        <div class="flex items-center bg-gray-50 rounded-lg p-1">
+                                            <button onclick="updateQuantity(${item.id}, -1, '${item.source}')" class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-orange-500 transition-colors qty-btn">
+                                                <i class="fa-solid fa-minus text-xs"></i>
+                                            </button>
+                                            <span class="w-6 text-center text-xs font-medium text-gray-800">${item.quantity}</span>
+                                            <button onclick="updateQuantity(${item.id}, 1, '${item.source}')" class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-orange-500 transition-colors qty-btn">
+                                                <i class="fa-solid fa-plus text-xs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 一键清空购物车
+        function clearCart() {
+            if (cart.length === 0) return;
+            cart = [];
+            saveCart();
+            updateCartUI();
+            broadcastCart();
+        }
+
+        // 结算
+        function checkout() {
+            if (cart.length === 0) return;
+
+            const { meishiPrice, yexiaoPrice, meishiCoupons } = calcTotals();
+
+            // 美味小馆：25元食堂券校验
+            if (meishiPrice > 0) {
+                const remainder = meishiPrice % 25; // 0~25
+                if (remainder > 1) {
+                    // 未用满25的倍数，提示可追加金额
+                    const need = meishiCoupons;          // 至少需要的券
+                    const gap = (25 - remainder);        // 还可添加的金额
+                    openConfirmModal(
+                        `当前已使用 ${need} 张券，还可以添加 ${gap.toFixed(2)} 元商品，确定下单吗？`,
+                        confirmOrder
+                    );
+                    return;
+                } else if (remainder > 0) {
+                    // 超出不足一元（正好超出一元及以内），给予优惠，只需 m-1 张券
+                    const realCoupons = meishiCoupons - 1;
+                    openConfirmModal(
+                        `当前已使用 ${realCoupons} 张券，给您一元优惠！`,
+                        () => confirmOrder(realCoupons)
+                    );
+                    return;
+                }
+                // remainder === 0：刚好整除，直接进入账单
+            }
+
+            // 直接弹出账单（无券提示或无需提示时）
+            openBillModal(meishiCoupons, yexiaoPrice);
+        }
+
+        // 确认下单（关闭券提示后弹出账单）
+        function confirmOrder(realCoupons) {
+            closeConfirmModal();
+            const { meishiCoupons, yexiaoPrice } = calcTotals();
+            // 优惠场景下实际用券数减少，否则用正常券数
+            const usedCoupons = (typeof realCoupons === 'number') ? realCoupons : meishiCoupons;
+            openBillModal(usedCoupons, yexiaoPrice);
+        }
+
+        // 弹出账单弹窗
+        function openBillModal(meishiCoupons, yexiaoPrice) {
+            const { meishiPrice } = calcTotals();
+            const billText = document.getElementById('bill-text');
+            billText.innerHTML = `
+                <div class="space-y-3 text-left">
+                    <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                        <span class="flex items-center gap-2 text-gray-700"><i class="fa-solid fa-bowl-rice text-orange-500"></i> 美味小馆（食堂券）</span>
+                        <span class="font-bold text-gray-900">${meishiCoupons} 张券</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm text-gray-500 pl-6">
+                        <span>合计金额</span>
+                        <span>¥${meishiPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <span class="flex items-center gap-2 text-gray-700"><i class="fa-solid fa-moon text-orange-500"></i> 夜宵狂欢（现金）</span>
+                        <span class="font-bold text-gray-900">¥${yexiaoPrice.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('bill-modal').classList.remove('hidden');
+        }
+
+        // 关闭账单弹窗
+        function closeBillModal() {
+            document.getElementById('bill-modal').classList.add('hidden');
+        }
+
+        // 确认账单后清空购物车
+        function payBill() {
+            cart = [];
+            saveCart();
+            updateCartUI();
+            broadcastCart();
+            toggleCart();
+            closeBillModal();
+            successModal.classList.remove('hidden');
+        }
+
+        // 弹出券确认提示
+        function openConfirmModal(text, onConfirm) {
+            const el = document.getElementById('confirm-modal');
+            document.getElementById('confirm-text').textContent = text;
+            el.classList.remove('hidden');
+            el.querySelector('[data-confirm]').onclick = () => {
+                el.classList.add('hidden');
+                onConfirm();
+            };
+        }
+
+        // 关闭券确认提示
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        // 切换购物车显示（移动端抽屉）
+        function toggleCart() {
+            const isClosed = cartSidebar.classList.contains('translate-x-full');
+            if (isClosed) {
+                cartSidebar.classList.remove('translate-x-full');
+                cartOverlay.classList.remove('hidden');
+                setTimeout(() => cartOverlay.classList.remove('opacity-0'), 10);
+            } else {
+                cartSidebar.classList.add('translate-x-full');
+                cartOverlay.classList.add('hidden');
+            }
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            successModal.classList.add('hidden');
+        }
+
+        // 向所有子页面广播购物车状态
+        function broadcastCart() {
+            const data = { type: 'CART_SYNC', cart };
+            if (frameMeishi.contentWindow) frameMeishi.contentWindow.postMessage(data, '*');
+            if (frameYexiao.contentWindow) frameYexiao.contentWindow.postMessage(data, '*');
+        }
+
+        // 接收子页面消息
+        window.addEventListener('message', (e) => {
+            if (!e.data || !e.data.type) return;
+
+            if (e.data.type === 'REQUEST_CART') {
+                if (e.source) e.source.postMessage({ type: 'CART_SYNC', cart }, '*');
+            } else if (e.data.type === 'UPDATE_CART_ITEM') {
+                const { item, change } = e.data;
+                if (!item || !item.source) return;
+
+                const existing = cart.find(c => c.id === item.id && c.source === item.source);
+                if (existing) {
+                    existing.quantity += change;
+                    if (existing.quantity <= 0) {
+                        cart = cart.filter(c => !(c.id === item.id && c.source === item.source));
+                    }
+                } else if (change > 0) {
+                    cart.push({ ...item, quantity: change });
+                }
+
+                saveCart();
+                updateCartUI();
+                broadcastCart();
+            }
+        });
+
+        // iframe 加载完成后同步购物车
+        frameMeishi.addEventListener('load', () => {
+            if (frameMeishi.contentWindow) frameMeishi.contentWindow.postMessage({ type: 'CART_SYNC', cart }, '*');
+        });
+        frameYexiao.addEventListener('load', () => {
+            if (frameYexiao.contentWindow) frameYexiao.contentWindow.postMessage({ type: 'CART_SYNC', cart }, '*');
+        });
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html>

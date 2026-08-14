@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美味小馆</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .qty-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <!-- 主体内容区 -->
+    <main class="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+
+        <!-- 欢迎语与搜索 -->
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">今日推荐 · 美味小馆</h2>
+                <p class="text-gray-500 text-sm mt-1">仅支持食堂券（25元/张，按上取整）</p>
+            </div>
+            <div class="relative w-full sm:w-64">
+                <input type="text" id="search-input" placeholder="搜索菜品..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-shadow">
+                <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+        </div>
+
+        <!-- 菜品网格 -->
+        <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- 菜品卡片将通过JS动态生成 -->
+        </div>
+
+        <!-- 空状态提示 (默认隐藏) -->
+        <div id="empty-state" class="hidden flex-col items-center justify-center h-64 text-gray-400">
+            <i class="fa-solid fa-cookie-bite text-4xl mb-3"></i>
+            <p>没有找到相关菜品</p>
+        </div>
+    </main>
+
+    <!-- JavaScript 逻辑 -->
+    <script>
+        // 来源标识
+        const SOURCE = 'meishi';
+
+        // 菜品数据
+        const menuItems = [
+            {
+                id: 1,
+                name: "鲜嫩牛肉",
+                price: 35,
+                image: "images/鲜嫩牛肉.jpg",
+                description: "精选牛里脊，口感嫩滑，营养丰富。",
+                category: "肉类"
+            },
+            {
+                id: 2,
+                name: "捞汁海鲜",
+                price: 35,
+                image: "images/捞汁海鲜.jpg",
+                description: "鲜辣爽口的捞汁小海鲜，鲜香四溢。",
+                category: "海鲜"
+            },
+            {
+                id: 3,
+                name: "秘制凤爪",
+                price: 30,
+                image: "images/秘制凤爪.jpg",
+                description: "软糯入味，香辣过瘾，胶原蛋白满满。",
+                category: "肉类"
+            },
+            {
+                id: 4,
+                name: "精品大虾",
+                price: 28,
+                image: "images/精品大虾.jpg",
+                description: "鲜活大虾，肉质紧实，鲜甜可口。",
+                category: "海鲜"
+            },
+            {
+                id: 5,
+                name: "虎皮猪蹄",
+                price: 12,
+                image: "images/虎皮猪蹄.jpg",
+                description: "软糯Q弹，卤香四溢，满口胶原蛋白。",
+                category: "肉类"
+            },
+            {
+                id: 6,
+                name: "麻辣藕片",
+                price: 8,
+                image: "images/麻辣藕片.jpg",
+                description: "香辣爽脆，麻香十足，开胃下饭。",
+                category: "凉菜"
+            },
+            {
+                id: 7,
+                name: "水煮花生",
+                price: 8,
+                image: "images/水煮花生.jpg",
+                description: "下酒必备，酥脆爽口，传统工艺。",
+                category: "凉菜"
+            },
+            {
+                id: 8,
+                name: "醇厚酸奶",
+                price: 8,
+                image: "images/醇厚酸奶.jpg",
+                description: "自制发酵，酸甜适中，解腻神器。",
+                category: "饮品"
+            },
+            {
+                id: 9,
+                name: "东鹏特饮",
+                price: 5,
+                image: "images/东鹏特饮.jpg",
+                description: "累了困了喝东鹏特饮，提神醒脑。",
+                category: "饮品"
+            },
+            {
+                id: 10,
+                name: "可口可乐",
+                price: 3,
+                image: "images/可乐.jpg",
+                description: "冰爽可口可乐，气泡十足，畅快解腻。",
+                category: "饮品"
+            },
+            {
+                id: 11,
+                name: "雪碧",
+                price: 3,
+                image: "images/雪碧.jpg",
+                description: "冰镇雪碧，清凉透心，透心凉心飞扬。",
+                category: "饮品"
+            },
+            {
+                id: 20,
+                name: "矿泉水",
+                price: 2,
+                image: "",
+                description: "凑单必选。",
+                category: "饮品"
+            }
+        ];
+
+        // 购物车状态（由父页面同步）
+        let cart = [];
+
+        // DOM 元素
+        const menuGrid = document.getElementById('menu-grid');
+        const searchInput = document.getElementById('search-input');
+        const emptyState = document.getElementById('empty-state');
+
+        // 初始化
+        function init() {
+            // 购物车不持久化，刷新后从空开始
+            cart = [];
+            renderMenu(menuItems);
+            requestCart();
+
+            // 搜索监听
+            searchInput.addEventListener('input', (e) => {
+                const keyword = e.target.value.toLowerCase();
+                const filtered = menuItems.filter(item =>
+                    item.name.toLowerCase().includes(keyword) ||
+                    item.description.toLowerCase().includes(keyword)
+                );
+                renderMenu(filtered);
+            });
+        }
+
+        // 渲染菜单
+        function renderMenu(items) {
+            menuGrid.innerHTML = '';
+
+            if (items.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-gray-100 flex flex-col h-full fade-in';
+
+                // 检查当前物品在购物车中的数量
+                const cartItem = cart.find(c => c.id === item.id && c.source === SOURCE);
+                const qty = cartItem ? cartItem.quantity : 0;
+
+                card.setAttribute('data-id', item.id);
+                card.innerHTML = `
+                    <div class="relative h-48 overflow-hidden group">
+                        <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold text-gray-700 shadow-sm">
+                            ${item.category}
+                        </div>
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-gray-900 line-clamp-1">${item.name}</h3>
+                            <span class="text-orange-600 font-bold text-lg">¥${item.price}</span>
+                        </div>
+                        <p class="text-gray-500 text-sm mb-4 line-clamp-2 flex-1">${item.description}</p>
+
+                        <div class="mt-auto flex items-center justify-between pt-2 border-t border-gray-50" data-control>
+                        </div>
+                    </div>
+                `;
+                menuGrid.appendChild(card);
+                updateCardControl(card, item, qty);
+            });
+        }
+
+        // 更新单张卡片的加减控件（不重建整页）
+        function updateCardControl(card, item, qty) {
+            const control = card.querySelector('[data-control]');
+            if (qty > 0) {
+                control.innerHTML = `
+                    <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                        <button onclick="updateQuantity(${item.id}, -1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-orange-500 transition-colors qty-btn">
+                            <i class="fa-solid fa-minus text-xs"></i>
+                        </button>
+                        <span class="w-8 text-center font-medium text-gray-800">${qty}</span>
+                        <button onclick="updateQuantity(${item.id}, 1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-orange-500 transition-colors qty-btn">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                control.innerHTML = `
+                    <button onclick="updateQuantity(${item.id}, 1)" class="w-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> 加入购物袋
+                    </button>
+                `;
+            }
+        }
+
+        // 同步购物车状态：仅更新已有卡片的数量，不重绘整页
+        function syncCardQuantities() {
+            const cards = menuGrid.querySelectorAll('[data-id]');
+            cards.forEach(card => {
+                const id = Number(card.getAttribute('data-id'));
+                const item = menuItems.find(m => m.id === id);
+                if (!item) return;
+                const cartItem = cart.find(c => c.id === id && c.source === SOURCE);
+                const qty = cartItem ? cartItem.quantity : 0;
+                updateCardControl(card, item, qty);
+            });
+        }
+
+        // 更新数量（通过 postMessage 通知父页面）
+        function updateQuantity(id, change) {
+            const item = menuItems.find(m => m.id === id);
+            if (!item) return;
+
+            window.parent.postMessage({
+                type: 'UPDATE_CART_ITEM',
+                item: {
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    image: item.image,
+                    source: SOURCE
+                },
+                change: change
+            }, '*');
+        }
+
+        // 请求父页面同步购物车
+        function requestCart() {
+            window.parent.postMessage({ type: 'REQUEST_CART' }, '*');
+        }
+
+        // 接收父页面购物车同步消息
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'CART_SYNC') {
+                cart = e.data.cart || [];
+                syncCardQuantities();
+            }
+        });
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html>
