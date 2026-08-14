@@ -54,10 +54,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-utensils text-orange-500 text-2xl"></i>
-                <h1 class="text-xl font-bold text-gray-900 tracking-tight">美味小馆</h1>
+                <h1 class="text-xl font-bold text-gray-900 tracking-tight">周末嗨点餐</h1>
             </div>
             <div class="flex items-center gap-4">
-                <button onclick="toggleCart()" class="relative p-2 text-gray-600 hover:text-orange-500 transition-colors">
+                <!-- 移动端才显示购物车入口，桌面端购物车常驻右侧 -->
+                <button onclick="toggleCart()" class="relative p-2 text-gray-600 hover:text-orange-500 transition-colors md:hidden">
                     <i class="fa-solid fa-shopping-cart text-xl"></i>
                     <span id="cart-badge" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-500 rounded-full hidden">0</span>
                 </button>
@@ -65,75 +66,84 @@
         </div>
     </header>
 
-    <!-- 主体内容区 -->
-    <main class="flex-1 overflow-y-auto p-4 sm:p-6 max-w-7xl mx-auto w-full">
-        
-        <!-- 欢迎语与搜索 -->
-        <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-800">今日推荐</h2>
-                <p class="text-gray-500 text-sm mt-1">新鲜食材，现点现做，美味直达</p>
-            </div>
-            <div class="relative w-full sm:w-64">
-                <input type="text" id="search-input" placeholder="搜索菜品..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-shadow">
-                <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+    <!-- 主体内容区：左侧菜单 + 右侧常驻购物车 -->
+    <main class="flex-1 flex overflow-hidden">
+        <!-- 左侧：菜单区 -->
+        <div class="flex-1 overflow-y-auto">
+            <div class="max-w-7xl mx-auto p-4 sm:p-6 w-full">
+                <!-- 欢迎语与搜索 -->
+                <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">美味小馆</h2>
+                        <p class="text-gray-500 text-sm mt-1">新鲜食材，现点现做，美味直达</p>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <input type="text" id="search-input" placeholder="搜索菜品..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-shadow">
+                        <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- 菜品网格 -->
+                <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- 菜品卡片将通过JS动态生成 -->
+                </div>
+
+                <!-- 空状态提示 (默认隐藏) -->
+                <div id="empty-state" class="hidden flex-col items-center justify-center h-64 text-gray-400">
+                    <i class="fa-solid fa-cookie-bite text-4xl mb-3"></i>
+                    <p>没有找到相关菜品</p>
+                </div>
             </div>
         </div>
 
-        <!-- 菜品网格 -->
-        <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
-            <!-- 菜品卡片将通过JS动态生成 -->
-        </div>
+        <!-- 右侧：购物车（桌面端常驻显示，移动端为抽屉） -->
+        <div id="cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden transition-opacity duration-300 md:hidden" onclick="toggleCart()"></div>
 
-        <!-- 空状态提示 (默认隐藏) -->
-        <div id="empty-state" class="hidden flex-col items-center justify-center h-64 text-gray-400">
-            <i class="fa-solid fa-cookie-bite text-4xl mb-3"></i>
-            <p>没有找到相关菜品</p>
-        </div>
+        <aside id="cart-sidebar" class="fixed top-0 right-0 h-full w-full sm:w-96 z-40 bg-white shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 md:static md:transform-none md:translate-x-0 md:z-auto md:shadow-none md:border-l md:border-gray-100 md:w-80 xl:w-96">
+            <!-- 购物车头部 -->
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-basket-shopping text-orange-500"></i> 我的订单
+                </h3>
+                <div class="flex items-center gap-1">
+                    <button id="clear-cart-btn" onclick="clearCart()" class="hidden px-2 py-1.5 text-sm text-red-500 hover:bg-red-50 rounded-md transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can text-xs"></i> 清空
+                    </button>
+                    <button onclick="toggleCart()" class="text-gray-400 hover:text-gray-600 transition-colors md:hidden p-1">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 购物车列表 -->
+            <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <!-- 购物车项将通过JS动态生成 -->
+                <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                    <i class="fa-solid fa-cart-arrow-down text-4xl mb-3 opacity-50"></i>
+                    <p>购物车是空的</p>
+                    <button onclick="toggleCart()" class="mt-4 text-orange-500 text-sm font-medium hover:underline md:hidden">去点餐</button>
+                </div>
+            </div>
+
+            <!-- 购物车底部结算 -->
+            <div class="border-t border-gray-100 p-6 bg-gray-50">
+                <div class="space-y-2 mb-4">
+                    <div class="flex justify-between text-sm text-gray-600">
+                        <span>商品总数</span>
+                        <span id="cart-total-count">0 件</span>
+                    </div>
+                    <div class="flex justify-between text-xl font-bold text-gray-900">
+                        <span>合计金额</span>
+                        <span class="text-orange-600">¥<span id="cart-total-price">0.00</span></span>
+                    </div>
+                </div>
+                <button onclick="checkout()" id="checkout-btn" disabled class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2">
+                    <span>立即结算</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </aside>
     </main>
-
-    <!-- 购物车侧边栏 (移动端全屏/桌面端侧滑) -->
-    <div id="cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden transition-opacity duration-300" onclick="toggleCart()"></div>
-    
-    <aside id="cart-sidebar" class="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
-        <!-- 购物车头部 -->
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <i class="fa-solid fa-basket-shopping text-orange-500"></i> 我的订单
-            </h3>
-            <button onclick="toggleCart()" class="text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
-        </div>
-
-        <!-- 购物车列表 -->
-        <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4">
-            <!-- 购物车项将通过JS动态生成 -->
-            <div class="flex flex-col items-center justify-center h-full text-gray-400">
-                <i class="fa-solid fa-cart-arrow-down text-4xl mb-3 opacity-50"></i>
-                <p>购物车是空的</p>
-                <button onclick="toggleCart()" class="mt-4 text-orange-500 text-sm font-medium hover:underline">去点餐</button>
-            </div>
-        </div>
-
-        <!-- 购物车底部结算 -->
-        <div class="border-t border-gray-100 p-6 bg-gray-50">
-            <div class="space-y-2 mb-4">
-                <div class="flex justify-between text-sm text-gray-600">
-                    <span>商品总数</span>
-                    <span id="cart-total-count">0 件</span>
-                </div>
-                <div class="flex justify-between text-xl font-bold text-gray-900">
-                    <span>合计金额</span>
-                    <span class="text-orange-600">¥<span id="cart-total-price">0.00</span></span>
-                </div>
-            </div>
-            <button onclick="checkout()" id="checkout-btn" disabled class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2">
-                <span>立即结算</span>
-                <i class="fa-solid fa-arrow-right"></i>
-            </button>
-        </div>
-    </aside>
 
     <!-- 成功提示模态框 -->
     <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
@@ -259,6 +269,7 @@
         const cartSidebar = document.getElementById('cart-sidebar');
         const cartOverlay = document.getElementById('cart-overlay');
         const successModal = document.getElementById('success-modal');
+        const clearCartBtn = document.getElementById('clear-cart-btn');
 
         // 初始化
         function init() {
@@ -380,13 +391,20 @@
             // 更新结算按钮状态
             checkoutBtn.disabled = totalCount === 0;
 
+            // 控制一键清空按钮显示
+            if (cart.length > 0) {
+                clearCartBtn.classList.remove('hidden');
+            } else {
+                clearCartBtn.classList.add('hidden');
+            }
+
             // 渲染购物车列表
             if (cart.length === 0) {
                 cartItemsContainer.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full text-gray-400">
                         <i class="fa-solid fa-cart-arrow-down text-4xl mb-3 opacity-50"></i>
                         <p>购物车是空的</p>
-                        <button onclick="toggleCart()" class="mt-4 text-orange-500 text-sm font-medium hover:underline">去点餐</button>
+                        <button onclick="toggleCart()" class="mt-4 text-orange-500 text-sm font-medium hover:underline md:hidden">去点餐</button>
                     </div>
                 `;
             } else {
@@ -409,6 +427,21 @@
                     </div>
                 `).join('');
             }
+        }
+
+        // 一键清空购物车
+        function clearCart() {
+            if (cart.length === 0) return;
+
+            cart = [];
+
+            const keyword = searchInput.value.toLowerCase();
+            const filtered = menuItems.filter(item =>
+                item.name.toLowerCase().includes(keyword) ||
+                item.description.toLowerCase().includes(keyword)
+            );
+            renderMenu(filtered);
+            updateCartUI();
         }
 
         // 切换购物车显示
