@@ -153,7 +153,7 @@
     <!-- 账单模态框 -->
     <div id="bill-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="closeBillModal()"></div>
-        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full mx-4 relative transform transition-all scale-100 fade-in">
+        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4 relative transform transition-all scale-100 fade-in">
             <div class="flex items-center gap-2 mb-5">
                 <i class="fa-solid fa-receipt text-xl text-orange-500"></i>
                 <h3 class="text-xl font-bold text-gray-900">订单账单</h3>
@@ -399,25 +399,112 @@
 
         // 弹出账单弹窗
         function openBillModal(meishiCoupons, yexiaoPrice) {
-            const { meishiPrice } = calcTotals();
+            const { meishiPrice, meishiItems, yexiaoItems } = calcTotals();
+
+            // 计算夜宵各店铺金额
+            const yexiaoShopTotals = {};
+            yexiaoItems.forEach(item => {
+                const shop = item.shop || '未知店铺';
+                yexiaoShopTotals[shop] = (yexiaoShopTotals[shop] || 0) + item.price * item.quantity;
+            });
+
+            // 店铺优惠提示（夜宵狂欢）
+            const shopPromotions = [];
+            const qztPrice = yexiaoShopTotals['衢州鸭头'] || 0;
+            if (qztPrice >= 30) {
+                shopPromotions.push('衢州鸭头满30元，赠送鸭脖一根');
+            } else if (qztPrice >= 19) {
+                shopPromotions.push('衢州鸭头满19元，赠送鸭全翅一个');
+            }
+
+            // 优惠券：若夜宵选择了 煌上煌 / 绝味鸭脖 / 周黑鸭，可输入减免金额
+            const couponShops = ['煌上煌', '绝味鸭脖', '周黑鸭'];
+            const hasCouponShop = couponShops.some(shop => (yexiaoShopTotals[shop] || 0) > 0);
+
+            // 生成商品明细：美味小馆显示名称×数量；夜宵狂欢显示【店铺名】食物名×数量
+            const renderItems = (items, source) => items.map(item => {
+                const label = source === 'yexiao'
+                    ? `【${item.shop || '未知店铺'}】${item.name} <span class="text-gray-400">×${item.quantity}</span>`
+                    : `${item.name} <span class="text-gray-400">×${item.quantity}</span>`;
+                return `
+                <div class="flex justify-between text-sm text-gray-600 py-0.5">
+                    <span>${label}</span>
+                    <span class="text-gray-400 ml-4">${(item.price * item.quantity).toFixed(2)}元</span>
+                </div>
+                `;
+            }).join('');
+
             const billText = document.getElementById('bill-text');
             billText.innerHTML = `
-                <div class="space-y-3 text-left">
-                    <div class="flex items-center justify-between pb-2 border-b border-gray-100">
-                        <span class="flex items-center gap-2 text-gray-700"><i class="fa-solid fa-bowl-rice text-orange-500"></i> 美味小馆（食堂券）</span>
-                        <span class="font-bold text-gray-900">${meishiCoupons} 张券</span>
+                <div class="space-y-3 text-left max-h-[70vh] overflow-y-auto">
+                    ${meishiItems.length > 0 ? `
+                    <div class="pb-2 border-b border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-2 text-gray-700 font-medium"><i class="fa-solid fa-bowl-rice text-orange-500"></i> 美味小馆（食堂券）</span>
+                            <span class="font-bold text-gray-900">${meishiCoupons} 张券</span>
+                        </div>
+                        <div class="mt-2 pl-1 space-y-1">
+                            ${renderItems(meishiItems, 'meishi')}
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 pl-1 mt-1">
+                            <span>小计</span><span>¥${meishiPrice.toFixed(2)}</span>
+                        </div>
                     </div>
-                    <div class="flex items-center justify-between text-sm text-gray-500 pl-6">
-                        <span>合计金额</span>
-                        <span>¥${meishiPrice.toFixed(2)}</span>
+                    ` : ''}
+                    ${yexiaoItems.length > 0 ? `
+                    <div class="pt-1">
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-2 text-gray-700 font-medium"><i class="fa-solid fa-moon text-orange-500"></i> 夜宵狂欢（现金）</span>
+                            <span class="font-bold text-gray-900">¥${yexiaoPrice.toFixed(2)}</span>
+                        </div>
+                        <div class="mt-2 pl-1 space-y-1">
+                            ${renderItems(yexiaoItems, 'yexiao')}
+                        </div>
+                        ${shopPromotions.length > 0 ? `
+                        <div class="mt-3 space-y-1">
+                            ${shopPromotions.map(p => `
+                                <div class="flex items-center gap-2 text-sm font-medium text-orange-600 bg-orange-50 rounded-lg px-3 py-2">
+                                    <i class="fa-solid fa-gift"></i>
+                                    <span>${p}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : ''}
+                        ${hasCouponShop ? `
+                        <div class="mt-4 pt-3 border-t border-dashed border-gray-200">
+                            <label class="flex items-center justify-between gap-3 text-sm text-gray-700">
+                                <span class="flex items-center gap-2">
+                                    <i class="fa-solid fa-ticket text-orange-500"></i>
+                                    优惠券（煌上煌/绝味鸭脖/周黑鸭）
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <span class="text-gray-400">¥</span>
+                                    <input type="number" id="coupon-input" min="0" step="0.01" placeholder="0"
+                                        class="w-24 px-2 py-1 text-right border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                        oninput="updateBillTotal()">
+                                </span>
+                            </label>
+                        </div>
+                        ` : ''}
                     </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <span class="flex items-center gap-2 text-gray-700"><i class="fa-solid fa-moon text-orange-500"></i> 夜宵狂欢（现金）</span>
-                        <span class="font-bold text-gray-900">¥${yexiaoPrice.toFixed(2)}</span>
+                    ` : ''}
+                    <div class="pt-3 border-t border-gray-200 flex items-center justify-between text-base font-bold text-gray-900">
+                        <span>合计应付</span>
+                        <span class="text-orange-600">¥<span id="bill-final-total">${(meishiPrice + yexiaoPrice).toFixed(2)}</span></span>
                     </div>
                 </div>
             `;
             document.getElementById('bill-modal').classList.remove('hidden');
+        }
+
+        // 根据优惠券输入框实时更新合计应付
+        function updateBillTotal() {
+            const { meishiPrice, yexiaoPrice } = calcTotals();
+            const raw = parseFloat(document.getElementById('coupon-input')?.value);
+            const coupon = (!isNaN(raw) && raw > 0) ? raw : 0;
+            const finalTotal = Math.max(0, meishiPrice + yexiaoPrice - coupon);
+            const el = document.getElementById('bill-final-total');
+            if (el) el.textContent = finalTotal.toFixed(2);
         }
 
         // 关闭账单弹窗

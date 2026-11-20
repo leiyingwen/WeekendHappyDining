@@ -45,8 +45,13 @@
         <!-- 欢迎语与搜索 -->
         <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <h2 class="text-2xl font-bold text-gray-800">今日推荐 · 美味小馆</h2>
-                <p class="text-gray-500 text-sm mt-1">仅支持食堂券（25元/张，按上取整）</p>
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    今日推荐 · 美味小馆
+                    <button onclick="openSelfModal()" class="ml-1 w-7 h-7 flex items-center justify-center rounded-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors" title="新增菜品">
+                        <i class="fa-solid fa-plus text-sm"></i>
+                    </button>
+                </h2>
+                <p class="text-gray-500 text-sm mt-1">仅支持食堂券（25元/张）</p>
             </div>
             <div class="relative w-full sm:w-64">
                 <input type="text" id="search-input" placeholder="搜索菜品..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-shadow">
@@ -66,6 +71,43 @@
         </div>
     </main>
 
+    <!-- 新增菜品弹窗 -->
+    <div id="self-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="closeSelfModal()"></div>
+        <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 relative fade-in">
+            <div class="flex items-center gap-2 mb-4">
+                <i class="fa-solid fa-plus-circle text-orange-500 text-xl"></i>
+                <h3 class="text-lg font-bold text-gray-900">新增菜品</h3>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">菜品名称</label>
+                    <input type="text" id="self-name" placeholder="例如：清炒时蔬"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">价格（元）</label>
+                    <input type="number" id="self-price" min="0" step="0.01" placeholder="0.00"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">分类</label>
+                    <input type="text" id="self-category" placeholder="例如：凉菜"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                </div>
+                <p id="self-err" class="text-sm text-red-500 hidden">请填写菜品名称与大于 0 的价格</p>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeSelfModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-lg transition-colors">
+                    取消
+                </button>
+                <button onclick="confirmSelfItem()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors">
+                    确认添加
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript 逻辑 -->
     <script>
         // 来源标识
@@ -82,11 +124,27 @@
                 category: "肉类"
             },
             {
+                id: 104,
+                name: "牛排",
+                price: 35,
+                image: "",
+                description: "鲜嫩多汁，煎至恰到好处，肉香浓郁。",
+                category: "肉类"
+            },
+            {
                 id: 2,
                 name: "捞汁海鲜",
                 price: 35,
                 image: "images/捞汁海鲜.jpg",
                 description: "鲜辣爽口的捞汁小海鲜，鲜香四溢。",
+                category: "海鲜"
+            },
+            {
+                id: 105,
+                name: "花甲",
+                price: 25,
+                image: "",
+                description: "鲜香肥美，香辣入味，下饭好搭档。",
                 category: "海鲜"
             },
             {
@@ -108,9 +166,33 @@
             {
                 id: 5,
                 name: "虎皮猪蹄",
-                price: 12,
+                price: 15,
                 image: "images/虎皮猪蹄.jpg",
                 description: "软糯Q弹，卤香四溢，满口胶原蛋白。",
+                category: "肉类"
+            },
+            {
+                id: 100,
+                name: "麻辣鸭头",
+                price: 18,
+                image: "images/衢州鸭头.jpg",
+                description: "麻辣鲜香，鸭头鲜嫩，开胃下饭。",
+                category: "肉类"
+            },
+            {
+                id: 102,
+                name: "香辣蟹",
+                price: 58,
+                image: "images/香辣蟹.jpg",
+                description: "鲜辣爽脆，蟹肉嫩滑，开胃下饭。",
+                category: "海鲜"
+            },
+            {
+                id: 103,
+                name: "蜜汁鸡翅",
+                price: 8,
+                image: "images/蜜汁鸡翅.jpg",
+                description: "鲜嫩多汁，口感鲜美，清香爽口。",
                 category: "肉类"
             },
             {
@@ -135,6 +217,14 @@
                 price: 8,
                 image: "images/醇厚酸奶.jpg",
                 description: "自制发酵，酸甜适中，解腻神器。",
+                category: "饮品"
+            },
+            {
+                id: 101,
+                name: "旺仔牛奶",
+                price: 6,
+                image: "images/旺仔牛奶.jpg",
+                description: "营养丰富，甜蜜可口，儿童喜爱。",
                 category: "饮品"
             },
             {
@@ -165,8 +255,8 @@
                 id: 20,
                 name: "矿泉水",
                 price: 2,
-                image: "",
-                description: "凑单必选。",
+                image: "images/矿泉水.jpg",
+                description: "凑单必选",
                 category: "饮品"
             }
         ];
@@ -219,9 +309,12 @@
                 const qty = cartItem ? cartItem.quantity : 0;
 
                 card.setAttribute('data-id', item.id);
+                const imgBlock = item.image
+                    ? `<img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">`
+                    : `<div class="w-full h-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center text-orange-400 text-4xl"><i class="fa-solid fa-bowl-rice"></i></div>`;
                 card.innerHTML = `
                     <div class="relative h-48 overflow-hidden group">
-                        <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                        ${imgBlock}
                         <div class="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold text-gray-700 shadow-sm">
                             ${item.category}
                         </div>
@@ -231,7 +324,7 @@
                             <h3 class="text-lg font-bold text-gray-900 line-clamp-1">${item.name}</h3>
                             <span class="text-orange-600 font-bold text-lg">¥${item.price}</span>
                         </div>
-                        <p class="text-gray-500 text-sm mb-4 line-clamp-2 flex-1">${item.description}</p>
+                        <p class="text-gray-500 text-sm mb-4 line-clamp-2 flex-1">${item.description || '自制菜品'}</p>
 
                         <div class="mt-auto flex items-center justify-between pt-2 border-t border-gray-50" data-control>
                         </div>
@@ -295,6 +388,41 @@
                 },
                 change: change
             }, '*');
+        }
+
+        // 新增菜品：弹窗开关与新增
+        let selfIdCounter = 9000; // 避免与原 id 冲突
+
+        function openSelfModal() {
+            document.getElementById('self-err').classList.add('hidden');
+            document.getElementById('self-name').value = '';
+            document.getElementById('self-price').value = '';
+            document.getElementById('self-category').value = '';
+            document.getElementById('self-modal').classList.remove('hidden');
+        }
+
+        function closeSelfModal() {
+            document.getElementById('self-modal').classList.add('hidden');
+        }
+
+        function confirmSelfItem() {
+            const name = document.getElementById('self-name').value.trim();
+            const price = parseFloat(document.getElementById('self-price').value);
+            const category = document.getElementById('self-category').value.trim() || '其他';
+            if (!name || isNaN(price) || price <= 0) {
+                document.getElementById('self-err').classList.remove('hidden');
+                return;
+            }
+            menuItems.push({
+                id: selfIdCounter++,
+                name: name,
+                price: price,
+                image: '', // 无图，渲染时用占位渐变
+                description: '',
+                category: category
+            });
+            closeSelfModal();
+            renderMenu(menuItems);
         }
 
         // 请求父页面同步购物车

@@ -66,6 +66,38 @@
         </div>
     </main>
 
+    <!-- 自制商品弹窗 -->
+    <div id="self-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="closeSelfModal()"></div>
+        <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 relative fade-in">
+            <div class="flex items-center gap-2 mb-4">
+                <i class="fa-solid fa-plus-circle text-orange-500 text-xl"></i>
+                <h3 class="text-lg font-bold text-gray-900">添加菜品</h3>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">菜品名称</label>
+                    <input type="text" id="self-name" placeholder="例如：红烧排骨"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">价格（元）</label>
+                    <input type="number" id="self-price" min="0" step="0.01" placeholder="0.00"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                </div>
+                <p id="self-err" class="text-sm text-red-500 hidden">请填写菜品名称与大于 0 的价格</p>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeSelfModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-lg transition-colors">
+                    取消
+                </button>
+                <button onclick="confirmSelfItem()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors">
+                    确认添加
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript 逻辑 -->
     <script>
         // 来源标识
@@ -84,7 +116,7 @@
                 { name: '萝卜', price: 1 },
                 { name: '土豆', price: 2 }
             ],
-            '火炬二路': [
+            '路边摊': [
                 { name: '炭烤生蚝', price: 10 },
                 { name: '长沙臭豆腐', price: 10 },
                 { name: '铁板豆腐', price: 6 }
@@ -105,7 +137,7 @@
                 { name: '手撕酱鸭', price: 30 },
                 { name: '鹌鹑', price: 8 },
                 { name: '猪耳', price: 25 },
-                { name: '鸭中翅', price: 16.8 },
+                { name: '鸭全翅', price: 16.8 },
                 { name: '毛豆', price: 9.9 }
             ],
             '周黑鸭': [
@@ -114,7 +146,7 @@
                 { name: '鸭锁骨', price: 24 },
                 { name: '鸭脖', price: 32 },
                 { name: '毛豆', price: 12.8 },
-                { name: '鸭中翅', price: 26 }
+                { name: '鸭全翅', price: 26 }
             ],
             '超市': [
                 { name: '雪花啤酒（箱）', price: 42 },
@@ -202,7 +234,12 @@
 
                 const header = document.createElement('h3');
                 header.className = 'text-lg font-bold text-gray-800 mb-3 flex items-center gap-2 border-l-4 border-orange-500 pl-3';
-                header.innerHTML = `<i class="fa-solid fa-store text-orange-500"></i> ${shop}`;
+                header.innerHTML = `
+                    <i class="fa-solid fa-store text-orange-500"></i> ${shop}
+                    <button onclick="openSelfModal('${shop}')" class="ml-1 w-6 h-6 flex items-center justify-center rounded-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors" title="添加菜品">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                    </button>
+                `;
                 section.appendChild(header);
 
                 const grid = document.createElement('div');
@@ -290,6 +327,43 @@
         // 请求父页面同步购物车
         function requestCart() {
             window.parent.postMessage({ type: 'REQUEST_CART' }, '*');
+        }
+
+        // 新增商品：弹窗开关与新增（适用于任一店铺）
+        let selfIdCounter = 9000; // 避免与展平 id 冲突
+        let selfTargetShop = '';
+
+        function openSelfModal(shop) {
+            selfTargetShop = shop || '';
+            document.getElementById('self-err').classList.add('hidden');
+            document.getElementById('self-name').value = '';
+            document.getElementById('self-price').value = '';
+            document.getElementById('self-modal').classList.remove('hidden');
+        }
+
+        function closeSelfModal() {
+            document.getElementById('self-modal').classList.add('hidden');
+        }
+
+        function confirmSelfItem() {
+            const name = document.getElementById('self-name').value.trim();
+            const price = parseFloat(document.getElementById('self-price').value);
+            if (!selfTargetShop || !name || isNaN(price) || price <= 0) {
+                document.getElementById('self-err').classList.remove('hidden');
+                return;
+            }
+            // 找到目标店铺的 shopId（与原展平数据结构一致）
+            const sample = menuItems.find(m => m.shop === selfTargetShop);
+            const shopId = sample ? sample.shopId : 0;
+            menuItems.push({
+                id: selfIdCounter++,
+                name: name,
+                price: price,
+                shop: selfTargetShop,
+                shopId: shopId
+            });
+            closeSelfModal();
+            renderMenu(menuItems);
         }
 
         // 接收父页面购物车同步消息
